@@ -1,3 +1,6 @@
+12.1 https://www.nowcoder.com/discuss/571830  	未完成
+12.2 https://www.nowcoder.com/discuss/574278	未开始
+
 Java基础
 
 1. 8种基本数据类型和长度
@@ -34,6 +37,20 @@ Java基础
 		System.arraycopy(elementData, index, elementData, index + 1, size - index) 函数进行拷贝
 		并不会自动锁容,但是可以调用trimToSize()方法手动缩容
 		
+4. Object类的方法
+	1. equals() 方法
+		1)equals默认是比较对象地址是否相同 如果是同一个对象返回true
+		2)重写判断内容是否相同: 同一个类的对象/成员变量都相同
+		3)满足的性质: x.equals(null) false
+				自反性: 非空x x.equals(x) true
+				对称性: x,y非空 x.equals(y) 同时 y.equals(x)为true
+				传递性：x.equals(y) 返回 true，y.equals(z) 返回 true，x.equals(z) 也应该返回 true
+				一致性：如果 x 和 y 引用的对象没有发生变化，反复调用 x.equals(y) 应该返回相同的结果
+	2. getClass() 方法
+	3. hashCode() 方法
+	4. finalize() 方法
+	5. clone() 方法
+	6. toString() 方法
 		
 		
 数据结构与算法
@@ -144,6 +161,9 @@ Java基础
 			JVM在保证最终结果正确的情况下，可以不按照程序编码的顺序执行语句，尽可能提高程序的性能
 			第2, 3步有可能发生重排, 1-3-2导致虽然此时singleton对象已经指向了分配好的内存空间,不为null
 				但是还没有初始化,导致空指针异常
+				
+				
+
 数据库
 关系型数据库（主要为 Mysql）
 
@@ -429,3 +449,4 @@ TCP 如何保障数据包有效
 			2)动态优先权
 				进程创建时赋一个优先权初值，运行期间动态调整其权值。具有可防止一个进程长期垄断或长期等待 CPU 的优点。
 					比如: CPU使用时间;进行IO操作后增加优先级;进程等待时间越长优先级越大
+
