@@ -1,5 +1,22 @@
 12.1 https://www.nowcoder.com/discuss/571830  	未完成
 12.2 https://www.nowcoder.com/discuss/574278	未开始
+12.3
+▲ 38 HashMap 与 ConcurrentHashMap 的实现原理是怎样的？ConcurrentHashMap 是如何保证线程安全的？ √
+▲ 27 volatile 关键字解决了什么问题，它的实现原理是什么？									   
+▲ 26 Java 中垃圾回收机制中如何判断对象需要回收？常见的 GC 回收算法有哪些？							
+▲ 26 synchronized 关键字底层是如何实现的？它与 Lock 相比优缺点分别是什么？
+▲ 24 简述 JVM 的内存模型 JVM 内存是如何对应到操作系统内存的？
+▲ 20 集合类中的 List 和 Map 的线程安全版本是什么，如何保证线程安全的？
+▲ 15 String 类能不能被继承？为什么？
+▲ 14 Java 线程和操作系统的线程是怎么对应的？Java线程是怎样进行调度的?
+▲ 11 简述 BIO, NIO, AIO 的区别
+▲ 11 实现单例设计模式（懒汉，饿汉）
+▲ 10 == 和 equals() 的区别？
+▲ 8 简述 Spring AOP 的原理
+▲ 6 简述 Synchronized，Volatile，可重入锁的不同使用场景及优缺点
+▲ 2 简述 Java 的 happen before 原则
+▲ 1 SpringBoot 是如何进行自动配置的？
+
 
 Java基础
 
@@ -13,8 +30,34 @@ Java基础
 	long	8B	-9223372036854775808 ~ 9223372036854775807
 	double	8B	-1.7E308~1.7E308
 
+		
+2. Object类的方法
+	1. equals() 方法
+		1)equals默认是比较对象地址是否相同 如果是同一个对象返回true
+		2)重写判断内容是否相同: 同一个类的对象/成员变量都相同
+		3)满足的性质: x.equals(null) false
+				自反性: 非空x x.equals(x) true
+				对称性: x,y非空 x.equals(y) 同时 y.equals(x)为true
+				传递性：x.equals(y) 返回 true，y.equals(z) 返回 true，x.equals(z) 也应该返回 true
+				一致性：如果 x 和 y 引用的对象没有发生变化，反复调用 x.equals(y) 应该返回相同的结果
+	2. getClass() 方法
+	3. hashCode() 方法
+	4. finalize() 方法
+	5. clone() 方法
+	6. toString() 方法
+
+Java容器
+1. ArrayList
+	扩容:
+		一开始默认为容量为10 只有在add的时候才进行初始化 到11是才开始扩容
+		newCapacity = oldCapacity + (oldCapacity >> 1) 每次扩容为原来的1.5倍
+		System.arraycopy(elementData, index, elementData, index + 1, size - index) 函数进行拷贝
+		并不会自动锁容,但是可以调用trimToSize()方法手动缩容
+		
 2. hashmap的内容
-	数组+链表 JDK1.8有改变,当链表长度大于8并且数组的bin超过64时,会将链表转化为红黑树 key value键值对
+	怎么实现的:
+		数组+链表 JDK1.8有改变,当链表长度大于8并且数组的bin超过64时,会将链表转化为红黑树 key value键值对
+	原理:
 	hash操作
 		1.8之后 用hash值的前16位和后16位做异或增大扰动性,就是为了混合原始哈希码的高位和低位，以此来加大低位的随机性。
 		而且混合后的低位掺杂了高位的部分特征，这样高位的信息也被变相保留下来
@@ -29,30 +72,107 @@ Java基础
 	resize
 	get
 	版本1.8之前之后
+	多线程:
+
+3. HashMap的多线程安全问题
+		JDK1.7 头插法
+		1) 扩容造成死循环
+			JDK1.7采用每个桶里的链表采用头插法;
+				假设有两个线程,同时扩容时对同一个桶里的链表A->B->C进行rehash并且transfer
+				假设A,B Rehash完还留在当前位置,对于线程1来说 此时指针指向A next指向B, 线程1刚好挂起
+				线程2按A->B->C顺序开始transfer, 由于采用头插法, A rehash留在原地, B rehash完要插在A前面, C rehash完插到了当前位置+扩容前的容量的位置
+				线程2完成操作之后内存里,当前链表顺序为B->A
+				此时线程1获得了时间片, 从当前指向A的指针开始rehash操作, A rehash完之后,头插到了当前链表也就是B之前 next指向B
+				这个时候形成了死循环B指向A, A又指向了B
+		2) 扩容造成数据丢失
+			假设某个桶有一个链表A->B->C 两个线程对链表进行rehash和transfer
+			线程1的指针指向A 变量next指向B 刚好在此时线程1进行了挂起
+			线程2完成了所有的操作 此时因为头插法在一个桶里C->A,  B被分到另一个桶 修改了B的next B.next==null
+			线程1获得了时间片,开始操作指针指向了A, A完成了rehash留在了原地, 
+				next指向B, B rehash完transfer到了新的桶 因为线程2的操作B.next==null 这时候C就丢失了 
+				在内存里面新的桶里面已经有一个B了,B采用头插法插入新的桶会指向自己形成死循环
+			
+		JDK 1.8 采用尾插法 不会再出现上面的死循环问题
+		1)put的时候, 会出现数据丢失的情况
+			假设两个线程 同时插入两个hash值一样的元素到同一个桶的时候
+			假设线程1 判断了这个桶为null 正打算直接插入元素的时候, 挂起了 
+			线程2直接将它的元素插入了这个桶所在的链表
+			而后线程1回来 根据之前遍历得到的指针 直接覆盖了这个线程1插入的元素
 		
-3. ArrayList
-	扩容:
-		一开始默认为容量为10 只有在add的时候才进行初始化 到11是才开始扩容
-		newCapacity = oldCapacity + (oldCapacity >> 1) 每次扩容为原来的1.5倍
-		System.arraycopy(elementData, index, elementData, index + 1, size - index) 函数进行拷贝
-		并不会自动锁容,但是可以调用trimToSize()方法手动缩容
+		2)put和get并发时，可能导致get为null
+			线程1执行put时, 因为元素个数超出threshold而导致rehash
+			线程2此时执行get,有可能导致这个问题。
+
+4. ConcurrentHashMap的实现
+		JDK1.7
+			Segment
+				Segment是JDK1.7中ConcurrentHashMap的核心设计，通过引入分段达成提高并行处理度的效果。
+				Segment继承了ReentrantLock并实现了序列化接口，说明Segment的锁是可重入的。
+			HashEntry
+				Segment中的元素是以HashEntry的形式存放在链表数组中的，其结构与普通HashMap的HashEntry基本一致，
+				不同的是Segment的HashEntry，其value由volatile修饰，以支持内存可见性，即写操作对其他读线程即时可见。
+			get方法
+				根据key获取value时，由于1.7中需要两次Hash过程，第一次需要定位到Segment；第二次需要定位到Segment中的桶下标。
+				在第二次查找具体元素时，首先对count做了非零判断，由于count是volatile修饰的，put、remove等操作会更新count的值，
+				所以当竞争发生的时候，volatile的语义可以保证写操作在读操作之前，也就保证了写操作对后续的读操作都是可见的，
+				这样后面get的后续操作就可以拿到完整的元素内容
+			put方法
+				put操作也涉及2次hash定位过程，但是比get操作多了是否扩容、rehash等过程
+			
+        JDK1.8
+			put方法:
+				先判断key与value是否为空。与HashMap不同，ConcurrentHashMap不允许null作为key或value，为什么这样设计? 
+				因为ConcurrentHashmap是支持并发,当通过get(k)获取对应的value,
+					如果获取到的是null时,无法判断它是put(k,v)的时候value为null，还是这个key从来没有做过映射。
+					HashMap是非并发的，可以通过contains(key)来做这个判断。而支持并发的Map在调用m.contains（key）和m.get(key)，可能已经不同了；
+				1) CAS用于当桶为空时，使用cas尝试加入新的桶头结点
+				2) synchronized用于桶不为空时，向链表或树中put结点的情形
+				
+			get方法:
+				当key为null的时候回抛出NullPointerException的异常
+				get操作通过首先计算key的hash值来确定该元素放在数组的哪个位置,判断table是否为空且table长度大于0且下标不为空
+				然后遍历该位置的所有节点,如果均无法定位到key则返回null
+			
+			resize方法:
+				当需要扩容的时候，调用的时候tryPresize方法
+				在tryPresize方法中，并没有加锁，允许多个线程进入，如果数组正在扩张，则当前线程也去帮助扩容。
+				值得注意的是，复制之后的新链表不是旧链表的绝对倒序;
+				在扩容的时候每个线程都有处理的步长,最少为16,在这个步长范围内的数组节点只有自己一个线程来处理.
+				整个操作是在持有段锁的情况下执行
+				
+		区别比较
+		1) JDK1.8的实现降低锁的粒度，JDK1.7版本锁的粒度是基于Segment的，包含多个HashEntry，而JDK1.8锁的粒度就是HashEntry（首节点）
+		2) JDK1.8版本的数据结构变得更加简单，使得操作也更加清晰流畅，
+			因为已经使用synchronized来进行同步，所以不需要分段锁的概念，也就不需要Segment这种数据结构了，由于粒度的降低，实现的复杂度也增加了
+		3) JDK1.8使用红黑树来优化链表，基于长度很长的链表的遍历是一个很漫长的过程，而红黑树的遍历效率是很快的，代替一定阈值的链表
+		4) JDK1.8为什么使用内置锁synchronized来代替重入锁ReentrantLock?
+			因为粒度降低了，在相对而言的低粒度加锁方式，synchronized并不比ReentrantLock差，在粗粒度加锁中ReentrantLock可能通过Condition来控制各个低粒度的边界
+			在大量的数据操作下，对于JVM的内存压力，基于API的ReentrantLock会产生更多的内存开销。
 		
-4. Object类的方法
-	1. equals() 方法
-		1)equals默认是比较对象地址是否相同 如果是同一个对象返回true
-		2)重写判断内容是否相同: 同一个类的对象/成员变量都相同
-		3)满足的性质: x.equals(null) false
-				自反性: 非空x x.equals(x) true
-				对称性: x,y非空 x.equals(y) 同时 y.equals(x)为true
-				传递性：x.equals(y) 返回 true，y.equals(z) 返回 true，x.equals(z) 也应该返回 true
-				一致性：如果 x 和 y 引用的对象没有发生变化，反复调用 x.equals(y) 应该返回相同的结果
-	2. getClass() 方法
-	3. hashCode() 方法
-	4. finalize() 方法
-	5. clone() 方法
-	6. toString() 方法
+5. HashMap 与 ConcurrentHashMap 的实现原理是怎样的？ConcurrentHashMap 是如何保证线程安全的？
+	HashMap: 数组 + 链表 元素的HashCode经过扰动函数之后, 映射到数组的索引, 相同hash但是key的元素在数组的同一个位置使用尾插法增长链表
+			1.8 链表的长度超过8时, 先做数组扩容避免树形化 1,当数组的长度超过64时,会将链表转化为红黑树 
+	ConcurrentHashMap
+		Hashtable这个结构虽然线程安全,但是效率不高,因为每个操作都是用了synchronized同步块,导致每次只有一个线程能操作数据
+		JDK1.7
+        采用分段锁,一个ConcurrentHashMap包含Segment数组, 每个Segement包含一个hashEntry数组。
+        其中hashEntry是一个链表结构元素，而Segment继承ReentrantLock,是一种可重入锁。
+        调用put修改hashEntry数组时，要获得对应的Segment锁。
+        调用get读取hashEntry数组时，无需上锁。volatile修饰共享变量保证内存可见性，不会读取过期数据。
+        
+        JDK1.8 
+		采用数组+链表/红黑树结构实现。
+		通过CAS和Sychronized保证并发安全。
+		Synchronized只锁定当前链表||红黑树首节点。
+		Hash不冲突，就不会产生并发。进一步缩小锁的粒度。
+			
 		
-		
+Java 多线程
+
+1. volatile 关键字解决了什么问题, 它的实现原理是什么?
+	
+
+
 数据结构与算法
 
 1. 数组，链表插入性能对比
