@@ -1,8 +1,8 @@
 12.1 https://www.nowcoder.com/discuss/571830  	未完成
 12.2 https://www.nowcoder.com/discuss/574278	未开始
 12.3
-▲ 38 HashMap 与 ConcurrentHashMap 的实现原理是怎样的？ConcurrentHashMap 是如何保证线程安全的？ √
-▲ 27 volatile 关键字解决了什么问题，它的实现原理是什么？									   
+▲ 38 HashMap 与 ConcurrentHashMap 的实现原理是怎样的？ConcurrentHashMap 是如何保证线程安全的？ 	√
+▲ 27 volatile 关键字解决了什么问题，它的实现原理是什么？										√						   
 ▲ 26 Java 中垃圾回收机制中如何判断对象需要回收？常见的 GC 回收算法有哪些？							
 ▲ 26 synchronized 关键字底层是如何实现的？它与 Lock 相比优缺点分别是什么？
 ▲ 24 简述 JVM 的内存模型 JVM 内存是如何对应到操作系统内存的？
@@ -11,10 +11,10 @@
 ▲ 14 Java 线程和操作系统的线程是怎么对应的？Java线程是怎样进行调度的?
 ▲ 11 简述 BIO, NIO, AIO 的区别
 ▲ 11 实现单例设计模式（懒汉，饿汉）
-▲ 10 == 和 equals() 的区别？
+▲ 10 == 和 equals() 的区别？																	√
 ▲ 8 简述 Spring AOP 的原理
 ▲ 6 简述 Synchronized，Volatile，可重入锁的不同使用场景及优缺点
-▲ 2 简述 Java 的 happen before 原则
+▲ 2 简述 Java 的 happen before 原则																
 ▲ 1 SpringBoot 是如何进行自动配置的？
 
 
